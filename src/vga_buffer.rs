@@ -94,6 +94,22 @@ impl Writer {
 		}
 	}
 
+	pub fn set_byte(&mut self, row: usize, col: usize, byte: u8) {
+		if col >= BUFFER_WIDTH {
+			return;
+		}
+		if row >= BUFFER_HEIGHT {
+			return;
+		}
+		// row, and col can't be bellow 0 since they are unsigned
+
+		let color_code = self.color_code;
+		self.buffer.chars[row][col] = ScreenChar {
+			ascii_character: byte,
+			color_code,
+		}
+	} 
+
 	fn new_line(&mut self) {
 		self.column_potition = 0;
 		self.row_position += 1;
@@ -128,6 +144,18 @@ pub fn print_something() {
 	writer.color_code.bg(Color::Red);
 	writer.color_code.fg(Color::Black);
 	writer.write_string("\nTest!!!!\n_\n\n_\n a\n");
+	
+	writer.color_code.bg(Color::Black);
+	writer.color_code.fg(Color::White);
+	writer.set_byte(15, 15, writer.color_code.0);
 
-	writer.write_byte(writer.color_code.0);
+	writer.set_byte(12,  5, b'F');
+	writer.set_byte(11,  6, b'l');
+	writer.set_byte(10,  7, b'o');
+	writer.set_byte(11,  8, b'a');
+	writer.set_byte(12,  9, b't');
+	writer.set_byte(11, 10, b'i');
+	writer.set_byte(10, 11, b'n');
+	writer.set_byte(11, 12, b'g');
+	writer.set_byte(12, 13, b'!');
 }
