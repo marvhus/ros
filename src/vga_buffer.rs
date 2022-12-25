@@ -57,7 +57,6 @@ const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
 use volatile::Volatile;
-
 #[repr(transparent)]
 struct Buffer {
 	chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
@@ -82,12 +81,22 @@ impl Writer {
 				if self.row_position >= BUFFER_HEIGHT {
 					self.row_position = 0;
 				}
-				self.set_byte(self.row_position, self.col_position, byte);
+				
+				let color_code = self.color_code;
+				self.buffer.chars[self.row_position][self.col_position].write(ScreenChar {
+					ascii_character: byte,
+					color_code,
+				});
 				self.col_position += 1;
 			}
 		}
 	}
 	
+	fn new_line(&mut self) {
+		self.col_position = 0;
+		self.row_position += 1;
+	}
+
 	pub fn write_string(&mut self, s: &str) {
 		for byte in s.bytes() {
 			match byte {
@@ -98,43 +107,17 @@ impl Writer {
 			}
 		}
 	}
+}
 
-	pub fn set_byte(&mut self, row: usize, col: usize, byte: u8) {
-		if col >= BUFFER_WIDTH {
-			return;
-		}
-		if row >= BUFFER_HEIGHT {
-			return;
-		}
-		// row, and col can't be bellow 0 since they are unsigned
-
-		let color_code = self.color_code;
-		self.buffer.chars[row][col].write(ScreenChar {
-			ascii_character: byte,
-			color_code,
-		});
-	}
-
-	pub fn set_string(&mut self, row: usize, mut col: usize, s: &str) {
-		'iterate_string: for byte in s.bytes() {
-			if self.col_position >= BUFFER_WIDTH || self.row_position >= BUFFER_HEIGHT {
-				break 'iterate_string;
-			}
-
-			match byte {
-				b'\n' => break 'iterate_string,
-				0x20..=0x7e => self.set_byte(row, col, byte),
-				_ => self.write_byte(0xfe),
-			}
-			col += 1;
-		}
-	}
-
-	fn new_line(&mut self) {
-		self.col_position = 0;
-		self.row_position += 1;
+use core::fmt;
+impl fmt::Write for Writer {
+	fn write_str(&mut self, s: &str) -> fmt::Result {
+		self.write_string(s);
+		Ok(())
 	}
 }
+
+use core::fmt::Write;
 
 pub fn print_something() {
 	let mut writer = Writer {
@@ -144,31 +127,11 @@ pub fn print_something() {
 		buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
 	};
 
-	writer.write_byte(b'H');
-
-	writer.color_code.fg(Color::Blue);
-	writer.write_string("ello, ");
-	writer.write_string("World!");
-	
-	writer.color_code.bg(Color::Red);
-	writer.color_code.fg(Color::Black);
-	writer.write_string("\nTest!!!!\n_\n \n_\n a\n");
+	writeln!(writer, "Hello, World!!").unwrap();
 	
 	writer.color_code.bg(Color::Black);
 	writer.color_code.fg(Color::White);
-	writer.set_byte(15, 15, writer.color_code.0);
-
-	writer.set_byte(12,  5, b'F');
-	writer.set_byte(11,  6, b'l');
-	writer.set_byte(10,  7, b'o');
-	writer.set_byte(11,  8, b'a');
-	writer.set_byte(12,  9, b't');
-	writer.set_byte(11, 10, b'i');
-	writer.set_byte(10, 11, b'n');
-	writer.set_byte(11, 12, b'g');
-	writer.set_byte(12, 13, b'!');
-
-	writer.color_code.bg(Color::LightCyan);
-	writer.color_code.fg(Color::Black);
-	writer.set_string(3, 15, " Test! ");
+	let bg = (writer.color_code.0 & 0xF0) >> 4;
+	let fg = writer.color_code.0 & 0x0F;
+	write!(writer, "Color data bg: {} fg: {}", bg, fg).unwrap();
 }
