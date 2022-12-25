@@ -56,13 +56,15 @@ struct ScreenChar {
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
+use volatile::Volatile;
+
 #[repr(transparent)]
 struct Buffer {
-	chars: [[ScreenChar; BUFFER_WIDTH]; BUFFER_HEIGHT],
+	chars: [[Volatile<ScreenChar>; BUFFER_WIDTH]; BUFFER_HEIGHT],
 }
 
 pub struct Writer {
-	column_potition: usize,
+	col_position: usize,
 	row_position: usize,
 	color_code: ColorCode,
 	buffer: &'static mut Buffer,
@@ -73,23 +75,15 @@ impl Writer {
 		match byte {
 			b'\n' => self.new_line(),
 			byte => {
-				if self.column_potition >= BUFFER_WIDTH {
+				if self.col_position >= BUFFER_WIDTH {
 					self.new_line();
 				}
 
 				if self.row_position >= BUFFER_HEIGHT {
 					self.row_position = 0;
 				}
-				
-				let row = self.row_position;
-				let col = self.column_potition;
-
-				let color_code = self.color_code;
-				self.buffer.chars[row][col] = ScreenChar {
-					ascii_character: byte,
-					color_code,
-				};
-				self.column_potition += 1;
+				self.set_byte(self.row_position, self.col_position, byte);
+				self.col_position += 1;
 			}
 		}
 	}
@@ -115,15 +109,15 @@ impl Writer {
 		// row, and col can't be bellow 0 since they are unsigned
 
 		let color_code = self.color_code;
-		self.buffer.chars[row][col] = ScreenChar {
+		self.buffer.chars[row][col].write(ScreenChar {
 			ascii_character: byte,
 			color_code,
-		}
+		});
 	}
 
 	pub fn set_string(&mut self, row: usize, mut col: usize, s: &str) {
 		'iterate_string: for byte in s.bytes() {
-			if self.column_potition >= BUFFER_WIDTH || self.row_position >= BUFFER_HEIGHT {
+			if self.col_position >= BUFFER_WIDTH || self.row_position >= BUFFER_HEIGHT {
 				break 'iterate_string;
 			}
 
@@ -137,7 +131,7 @@ impl Writer {
 	}
 
 	fn new_line(&mut self) {
-		self.column_potition = 0;
+		self.col_position = 0;
 		self.row_position += 1;
 	}
 }
@@ -145,7 +139,7 @@ impl Writer {
 pub fn print_something() {
 	let mut writer = Writer {
 		row_position: BUFFER_WIDTH - 1,
-		column_potition: 0,
+		col_position: 0,
 		color_code: ColorCode::new(Color::Yellow, Color::Black),
 		buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
 	};
