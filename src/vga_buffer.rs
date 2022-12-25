@@ -63,8 +63,7 @@ struct Buffer {
 }
 
 pub struct Writer {
-	col_position: usize,
-	row_position: usize,
+	column_position: usize,
 	color_code: ColorCode,
 	buffer: &'static mut Buffer,
 }
@@ -74,27 +73,43 @@ impl Writer {
 		match byte {
 			b'\n' => self.new_line(),
 			byte => {
-				if self.col_position >= BUFFER_WIDTH {
+				if self.column_position >= BUFFER_WIDTH {
 					self.new_line();
 				}
 
-				if self.row_position >= BUFFER_HEIGHT {
-					self.row_position = 0;
-				}
+				let row = BUFFER_HEIGHT - 1;
+				let col = self.column_position;
 				
 				let color_code = self.color_code;
-				self.buffer.chars[self.row_position][self.col_position].write(ScreenChar {
+				self.buffer.chars[row][col].write(ScreenChar {
 					ascii_character: byte,
 					color_code,
 				});
-				self.col_position += 1;
+				self.column_position += 1;
 			}
 		}
 	}
 	
 	fn new_line(&mut self) {
-		self.col_position = 0;
-		self.row_position += 1;
+		for row in 1..BUFFER_HEIGHT {
+			for col in 0..BUFFER_WIDTH {
+				let character = self.buffer.chars[row][col].read();
+				self.buffer.chars[row - 1][col].write(character);
+			}
+		}
+		self.clear_row(BUFFER_HEIGHT - 1);
+		self.column_position = 0;
+	}
+
+	fn clear_row(&mut self, row: usize) {
+		let blank = ScreenChar {
+			ascii_character: b' ',
+			//color_code: self.color_code,
+			color_code: ColorCode::new(Color::Blue, Color::Black),
+		};
+		for col in 0..BUFFER_WIDTH {
+			self.buffer.chars[row][col].write(blank);
+		}
 	}
 
 	pub fn write_string(&mut self, s: &str) {
@@ -121,8 +136,7 @@ use core::fmt::Write;
 
 pub fn print_something() {
 	let mut writer = Writer {
-		row_position: BUFFER_WIDTH - 1,
-		col_position: 0,
+		column_position: 0,
 		color_code: ColorCode::new(Color::Yellow, Color::Black),
 		buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
 	};
@@ -133,5 +147,8 @@ pub fn print_something() {
 	writer.color_code.fg(Color::White);
 	let bg = (writer.color_code.0 & 0xF0) >> 4;
 	let fg = writer.color_code.0 & 0x0F;
-	write!(writer, "Color data bg: {} fg: {}", bg, fg).unwrap();
+	writeln!(writer, "Color data bg: {} fg: {}", bg, fg).unwrap();
+
+	writer.color_code = ColorCode::new(Color::Black, Color::White);
+	writeln!(writer, "Testing! ...").unwrap();
 }
