@@ -93,6 +93,17 @@ impl Writer {
 			}
 		}
 	}
+	
+	pub fn write_string(&mut self, s: &str) {
+		for byte in s.bytes() {
+			match byte {
+				// printable ASCII byte or newline
+				0x20..=0x7e | b'\n' => self.write_byte(byte),
+				// not part of printable ASCII range
+				_ => self.write_byte(0xfe),
+			}
+		}
+	}
 
 	pub fn set_byte(&mut self, row: usize, col: usize, byte: u8) {
 		if col >= BUFFER_WIDTH {
@@ -108,22 +119,26 @@ impl Writer {
 			ascii_character: byte,
 			color_code,
 		}
-	} 
+	}
+
+	pub fn set_string(&mut self, row: usize, mut col: usize, s: &str) {
+		'iterate_string: for byte in s.bytes() {
+			if self.column_potition >= BUFFER_WIDTH || self.row_position >= BUFFER_HEIGHT {
+				break 'iterate_string;
+			}
+
+			match byte {
+				b'\n' => break 'iterate_string,
+				0x20..=0x7e => self.set_byte(row, col, byte),
+				_ => self.write_byte(0xfe),
+			}
+			col += 1;
+		}
+	}
 
 	fn new_line(&mut self) {
 		self.column_potition = 0;
 		self.row_position += 1;
-	}
-	
-	pub fn write_string(&mut self, s: &str) {
-		for byte in s.bytes() {
-			match byte {
-				// printable ASCII byte or newline
-				0x20..=0x7e | b'\n' => self.write_byte(byte),
-				// not part of printable ASCII range
-				_ => self.write_byte(0xfe),
-			}
-		}
 	}
 }
 
@@ -143,7 +158,7 @@ pub fn print_something() {
 	
 	writer.color_code.bg(Color::Red);
 	writer.color_code.fg(Color::Black);
-	writer.write_string("\nTest!!!!\n_\n\n_\n a\n");
+	writer.write_string("\nTest!!!!\n_\n \n_\n a\n");
 	
 	writer.color_code.bg(Color::Black);
 	writer.color_code.fg(Color::White);
@@ -158,4 +173,8 @@ pub fn print_something() {
 	writer.set_byte(10, 11, b'n');
 	writer.set_byte(11, 12, b'g');
 	writer.set_byte(12, 13, b'!');
+
+	writer.color_code.bg(Color::LightCyan);
+	writer.color_code.fg(Color::Black);
+	writer.set_string(3, 15, " Test! ");
 }
