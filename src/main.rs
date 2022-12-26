@@ -24,7 +24,12 @@ pub extern "C" fn _start() -> ! {
 	writeln!(WRITER.lock() ,"Testing! 1..2..3..").unwrap();
 
 	set_bg_color(Color::Black);
-	write!(WRITER.lock() , "0123456789").unwrap();
+	writeln!(WRITER.lock() , "0123456789").unwrap();
+
+	set_fg_color(Color::White);
+	print!("Test asd ");
+	println!("Hello");
+	print!("sdfjklsdfj");
 	
 	loop {}
 }
