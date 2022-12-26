@@ -56,6 +56,7 @@ struct ScreenChar {
 const BUFFER_HEIGHT: usize = 25;
 const BUFFER_WIDTH: usize = 80;
 
+use lazy_static::lazy_static;
 use volatile::Volatile;
 #[repr(transparent)]
 struct Buffer {
@@ -104,8 +105,7 @@ impl Writer {
 	fn clear_row(&mut self, row: usize) {
 		let blank = ScreenChar {
 			ascii_character: b' ',
-			//color_code: self.color_code,
-			color_code: ColorCode::new(Color::Blue, Color::Black),
+			color_code: self.color_code,
 		};
 		for col in 0..BUFFER_WIDTH {
 			self.buffer.chars[row][col].write(blank);
@@ -132,23 +132,12 @@ impl fmt::Write for Writer {
 	}
 }
 
-use core::fmt::Write;
+use spin::Mutex;
 
-pub fn print_something() {
-	let mut writer = Writer {
+lazy_static! {
+	pub static ref WRITER: Mutex<Writer> = Mutex::new(Writer {
 		column_position: 0,
 		color_code: ColorCode::new(Color::Yellow, Color::Black),
 		buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
-	};
-
-	writeln!(writer, "Hello, World!!").unwrap();
-	
-	writer.color_code.bg(Color::Black);
-	writer.color_code.fg(Color::White);
-	let bg = (writer.color_code.0 & 0xF0) >> 4;
-	let fg = writer.color_code.0 & 0x0F;
-	writeln!(writer, "Color data bg: {} fg: {}", bg, fg).unwrap();
-
-	writer.color_code = ColorCode::new(Color::Black, Color::White);
-	writeln!(writer, "Testing! ...").unwrap();
+	});
 }
