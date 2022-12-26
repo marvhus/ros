@@ -70,6 +70,18 @@ pub struct Writer {
 }
 
 impl Writer {
+	pub fn set_colors(&mut self, fg: Color, bg: Color) {
+		self.color_code = ColorCode::new(fg, bg);
+	}
+
+	pub fn set_fg_color(&mut self, col: Color) {
+		self.color_code.fg(col);
+	}
+	
+	pub fn set_bg_color(&mut self, col: Color) {
+		self.color_code.bg(col);
+	}
+	
 	pub fn write_byte(&mut self, byte: u8) {
 		match byte {
 			b'\n' => self.new_line(),
@@ -105,7 +117,7 @@ impl Writer {
 	fn clear_row(&mut self, row: usize) {
 		let blank = ScreenChar {
 			ascii_character: b' ',
-			color_code: self.color_code,
+			color_code: ColorCode::new(Color::White, Color::Black),
 		};
 		for col in 0..BUFFER_WIDTH {
 			self.buffer.chars[row][col].write(blank);
