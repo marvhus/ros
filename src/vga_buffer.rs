@@ -153,3 +153,15 @@ lazy_static! {
 		buffer: unsafe { &mut *(0xb8000 as *mut Buffer) },
 	});
 }
+
+pub fn set_fg_color(col: Color) {
+	WRITER.lock().set_fg_color(col);
+}
+
+pub fn set_bg_color(col: Color) {
+	WRITER.lock().set_bg_color(col);
+}
+
+pub fn set_colors(fg: Color, bg: Color) {
+	WRITER.lock().set_colors(fg, bg);
+}
