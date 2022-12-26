@@ -13,17 +13,18 @@ mod vga_buffer;
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
 	use core::fmt::Write;
+	use vga_buffer::{Color, set_fg_color, set_bg_color, set_colors, WRITER};
 	
-	vga_buffer::WRITER.lock().write_str("Hello, World!\n").unwrap();
+	WRITER.lock().write_str("Hello, World!\n").unwrap();
 	
-	vga_buffer::set_fg_color(vga_buffer::Color::White);
-	writeln!(vga_buffer::WRITER.lock(), "Some numbers: {} {}", 42, 1.337).unwrap();
+	set_fg_color(vga_buffer::Color::White);
+	writeln!(WRITER.lock(), "Some numbers: {} {}", 42, 1.337).unwrap();
 
-	vga_buffer::set_colors(vga_buffer::Color::DarkGray, vga_buffer::Color::White);
-	writeln!(vga_buffer::WRITER.lock() ,"Testing! 1..2..3..").unwrap();
+	set_colors(Color::DarkGray, vga_buffer::Color::White);
+	writeln!(WRITER.lock() ,"Testing! 1..2..3..").unwrap();
 
-	vga_buffer::set_bg_color(vga_buffer::Color::Black);
-	write!(vga_buffer::WRITER.lock() , "0123456789").unwrap();
+	set_bg_color(Color::Black);
+	write!(WRITER.lock() , "0123456789").unwrap();
 	
 	loop {}
 }
