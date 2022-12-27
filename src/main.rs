@@ -2,9 +2,12 @@
 #![no_main]
 
 use core::panic::PanicInfo;
+use vga_buffer::{Color, set_fg_color, set_bg_color, set_colors};
 
 #[panic_handler]
-fn panic(_info: &PanicInfo) -> ! {
+fn panic(info: &PanicInfo) -> ! {
+	set_fg_color(Color::Red);
+	println!("{}", info);
 	loop {} 
 }
 
@@ -12,7 +15,6 @@ mod vga_buffer;
 
 #[no_mangle]
 pub extern "C" fn _start() -> ! {
-	use vga_buffer::{Color, set_fg_color, set_bg_color, set_colors};
 	
 	println!("Hello, World!");
 	
@@ -28,7 +30,9 @@ pub extern "C" fn _start() -> ! {
 	set_fg_color(Color::White);
 	print!("Test asd ");
 	println!("Hello");
-	print!("sdfjklsdfj");
+	println!("sdfjklsdfj");
+
+	//panic!("Testing 1.. 2.. 3..");
 	
 	loop {}
 }
