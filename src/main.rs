@@ -6,7 +6,7 @@ use vga_buffer::{Color, set_fg_color, set_bg_color, set_colors};
 
 #[panic_handler]
 fn panic(info: &PanicInfo) -> ! {
-	set_fg_color(Color::Red);
+	set_colors(Color::Red, Color::Black);
 	println!("{}", info);
 	loop {} 
 }
